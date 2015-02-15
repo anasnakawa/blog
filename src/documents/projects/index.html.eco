@@ -1,0 +1,31 @@
+---
+title     : 'Projects'
+nav       : 'root'
+layout    : 'page'
+hideTitle : false
+---
+
+<hr />
+
+<div class="repos">
+  <script type="text/javascript">
+  var repos = [
+  	  'anasnakawa/jquery.ajax.fake'
+  	, 'anasnakawa/chrome-github-avatars'
+  	, 'anasnakawa/jDeclarative'
+  	, 'anasnakawa/bi-app-less'
+  	, 'anasnakawa/bi-app-sass'
+  	, 'anasnakawa/kalendae-skins'
+  	, 'anasnakawa/docs'
+  	, 'anasnakawa/anasnakawa.com'
+  	, 'anasnakawa/anasnakawa-arabic'
+  ]
+  , cache = [];
+  
+  for( var i in repos ) {
+  	cache.push( '<div data-repo="{repo}"></div>'.replace(/{repo}/, repos[ i ]) );
+  }
+
+  document.write( cache.join('\n') );
+  </script>
+</div>

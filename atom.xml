@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+	<title>Anas Nakawa</title>
+	<link href="http://anasnakawa.com/atom.xml" rel="self"/>
+	<link href="http://anasnakawa.com"/>
+	<updated>2015-02-15T19:54:38.346Z</updated>
+	<id>http://anasnakawa.com</id>
+	<author>
+		<name>Anas Nakawa</name>
+		<email>anas.nakawa@gmail.com</email>
+	</author>
+
+	
+		<entry>
+			<title>Resetting Knockout Observables</title>
+			<link href="http://anasnakawa.com//posts/resetting-knockout-observables"/>
+			<updated>2014-02-18T20:00:00.000Z</updated>
+			<id>http://anasnakawa.com//posts/resetting-knockout-observables</id>
+			<content type="html">&lt;p&gt;I used to see developers defining knockout observables somewhere in their modules, and later when hiding the module they go and reset those observables with the same value the observable has been initialized with.&lt;/p&gt;
+&lt;p&gt;not a big deal, but the more you have observables in your module, the more annoying it will become to reset them.&lt;/p&gt;
+&lt;p&gt;life should be easier, and as developers we always have the choice to make things easier for us.
+the problem we&amp;#39;re facing here, is that we shouldn&amp;#39;t provide the default value twice. once you define an observable, you know what default value for this observable should be.&lt;/p&gt;
+&lt;p&gt;so the trick here is to come up with an easy way to tell the observbale when you initialize it that this is your default value.&lt;/p&gt;
+&lt;p&gt;I did a tiny extension to the knockout that hopefully will ease the pain here, let me show you the code:&lt;/p&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;javascript&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// adding default value when initializing an observable&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// for later resetting, preventing the observable from&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// becoming undefined ( still you can set it to `null` )&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// ====================================================&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// example[1]: primitive types ( passed by value )&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// -----------------------------------------------&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// var username = ko.observable().default( 'guest' );&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// username();              // 'guest'&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// username( 'admin' );     // 'admin'&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// username( undefined );   // 'guest'&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// username( 'john doe' );  // 'john doe'&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// username.reset();        // 'guest'&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;//&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// example[2]: non-premitive types ( passed by reference )&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// -------------------------------------------------------&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// var userList = ko.observableArray([]).default(function() { return []; });&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// var settings = ko.observable().default(function() { return { foo: 'bar' } });&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// userList.reset();&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// settings.reset();&lt;/span&gt;
+ko.observable.prototype.reset = &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt; {&lt;/span&gt;
+  &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;( &lt;span class=&quot;keyword&quot;&gt;typeof&lt;/span&gt; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;._default === &lt;span class=&quot;string&quot;&gt;'function'&lt;/span&gt; ? &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;._default() : &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;._default );
+}
+
+&lt;span class=&quot;comment&quot;&gt;// * **param:** {object|factory}&lt;/span&gt;
+ko.observable.prototype.&lt;span class=&quot;keyword&quot;&gt;default&lt;/span&gt; = &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;( value )&lt;/span&gt; {&lt;/span&gt;
+  &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt;( &lt;span class=&quot;keyword&quot;&gt;typeof&lt;/span&gt; value === &lt;span class=&quot;string&quot;&gt;'undefined'&lt;/span&gt; ) {
+    &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt;;
+  }
+
+  &lt;span class=&quot;comment&quot;&gt;// store default value&lt;/span&gt;
+  &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;._default = value;
+
+  &lt;span class=&quot;comment&quot;&gt;// observable defined with no arguments&lt;/span&gt;
+  &lt;span class=&quot;comment&quot;&gt;// use default&lt;/span&gt;
+  &lt;span class=&quot;keyword&quot;&gt;typeof&lt;/span&gt; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;() === &lt;span class=&quot;string&quot;&gt;'undefined'&lt;/span&gt; &amp;amp;&amp;amp; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.reset();
+
+  &lt;span class=&quot;comment&quot;&gt;// whenever value changed to undefined, reset to default&lt;/span&gt;
+  &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.subscribe(&lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;( newValue )&lt;/span&gt; {&lt;/span&gt;
+    &lt;span class=&quot;keyword&quot;&gt;typeof&lt;/span&gt; newValue === &lt;span class=&quot;string&quot;&gt;'undefined'&lt;/span&gt; &amp;amp;&amp;amp; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.reset();
+  });
+
+  &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;after you include this tiny extension to your application ( Note that it should be added after loading &lt;code&gt;knockout.js&lt;/code&gt; file ),
+you can define your own observable using the &lt;code&gt;default&lt;/code&gt; extension as follows&lt;/p&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;javascript&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.price = ko.observable().&lt;span class=&quot;keyword&quot;&gt;default&lt;/span&gt;( &lt;span class=&quot;number&quot;&gt;0&lt;/span&gt; );
+
+&lt;span class=&quot;comment&quot;&gt;// this.observableArray([] ).default([ ]) will not work, because array is passed by reference&lt;/span&gt;
+&lt;span class=&quot;comment&quot;&gt;// so second time you do a reset, it won't work&lt;/span&gt;
+&lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.itemList = ko.observableArray([ ]).&lt;span class=&quot;keyword&quot;&gt;default&lt;/span&gt;( &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt; {&lt;/span&gt; &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt; [ ] });
+
+&lt;span class=&quot;comment&quot;&gt;// for the same previous reason, we use a factory to generate the default value&lt;/span&gt;
+&lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.config = ko.observable().&lt;span class=&quot;keyword&quot;&gt;default&lt;/span&gt;( &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt; {&lt;/span&gt; &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt; {} });
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;later when you want to reset those observables, you can call the &lt;code&gt;reset&lt;/code&gt; method..&lt;/p&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;javascript&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// later you can reset it like this&lt;/span&gt;
+&lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.price.reset();
+&lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.itemList.reset();
+&lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;.config.reset();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;and in case you don&amp;#39;t like to reset every observable&lt;/p&gt;
+&lt;pre class=&quot;highlight&quot;&gt;&lt;code class=&quot;javascript&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;for&lt;/span&gt;( &lt;span class=&quot;keyword&quot;&gt;var&lt;/span&gt; obs &lt;span class=&quot;keyword&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt; ) {
+  ko.isObservable( &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;[ obs ] ) &amp;amp;&amp;amp; &lt;span class=&quot;keyword&quot;&gt;this&lt;/span&gt;[ obs ].reset();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;p&gt;Note here that when our default value is a primitive, we just pass it to the &lt;code&gt;default&lt;/code&gt; method as is, while when our default value is an Array or an Object, we need to provide the default value using a factory method, and thats because unlike primitives, Arrays and Objects are passed by reference, so the factory method here will make sure everytime we do a reset, we&amp;#39;ll get a fresh copy of the desired default value.&lt;/p&gt;
+&lt;p&gt;hope it will ease your life a bit :)&lt;/p&gt;
+</content>
+		</entry>
+	
+		<entry>
+			<title>Blogging with Docpad</title>
+			<link href="http://anasnakawa.com//posts/blogging-with-docpad"/>
+			<updated>2013-03-02T20:00:00.000Z</updated>
+			<id>http://anasnakawa.com//posts/blogging-with-docpad</id>
+			<content type="html">&lt;p&gt;it has been a while since my last blog post, which happened over 2 years ago..  &lt;/p&gt;
+&lt;p&gt;usually i am not that active blogger, maybe because I wasn&amp;#39;t feeling comfortable with the blog engines out there, also lets not forget that most of the times i am a lazy person, especially when it comes to writing posts.&lt;/p&gt;
+&lt;h3 id=&quot;why-i-hated-blog-engines-&quot;&gt;Why I hated blog engines ?&lt;/h3&gt;
+&lt;p&gt;actually I think blog engines ( such as Wordpress, tumblr ..etc ) are great for writing posts for most people, but when it comes to a developer like me sometimes I just don&amp;#39;t feel that I have the freedom that I want..&lt;/p&gt;
+&lt;p&gt;either if I want to share a code snippet with some fancy syntax highlighting, or if I want to provide some live demo, both ways I will end up looking for some plugin to satisfy my needs ... not exactly what I was looking for.&lt;/p&gt;
+&lt;p&gt;the answer should be much simpler, all I need is to write HTML/CSS &amp;amp; JS code at my convenience, and that was not much to ask.&lt;/p&gt;
+&lt;h3 id=&quot;a-better-alternative-&quot;&gt;A better alternative..&lt;/h3&gt;
+&lt;p&gt;Last year I started to hear about somthing called &lt;strong&gt;static site generators&lt;/strong&gt;, I even started to see some great front-end developers shifting their blogs into one of these generators..&lt;/p&gt;
+&lt;p&gt;first I was surprised that most static site generator implementations out there were built on ruby ( e.g: &lt;a href=&quot;https://github.com/mojombo/jekyll&quot;&gt;Jekyll&lt;/a&gt;, &lt;a href=&quot;https://github.com/imathis/octopress&quot;&gt;Octopress&lt;/a&gt; ), but since I am a javascript guy, I was looking for something more familiar to me...a Node Js implementation, and found that &lt;a href=&quot;https://github.com/bevry/docpad&quot;&gt;Docpad&lt;/a&gt; was exactly what I was looking for.&lt;/p&gt;
+&lt;p&gt;getting started with docpad was straight forward, they have some nice set of &lt;a href=&quot;http://docpad.org/docs/skeletons&quot;&gt;pre-built skeletons&lt;/a&gt;, so I cloned their &lt;a href=&quot;https://github.com/docpad/twitter-bootstrap.docpad&quot;&gt;Bootstrap Skeleton&lt;/a&gt;, and got my hands on this nice technology..&lt;/p&gt;
+&lt;h3 id=&quot;design-inspiration&quot;&gt;Design inspiration&lt;/h3&gt;
+&lt;p&gt;it is worth mentioning that this site was not only inspired by &lt;a href=&quot;http://premiumpixels.com/&quot;&gt;Orman&amp;#39;s Clark&lt;/a&gt; great designs, I actually transofmed his &lt;a href=&quot;http://www.premiumpixels.com/freebies/code-editor-app-psd/&quot;&gt;Code Editor App&lt;/a&gt; completly into what you see over here.&lt;/p&gt;
+&lt;div class=&quot;img-wrap&quot;&gt;
+  &lt;img alt=&quot;Code Editor App - By Orman Clark&quot; title=&quot;Code Editor App - By Orman Clark&quot; src=&quot;http://turbo.premiumpixels.com/wp-content/uploads/2012/05/preview.jpg&quot; /&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;site-code&quot;&gt;Site code&lt;/h3&gt;
+&lt;p&gt;you can find the source code of this site hosted on &lt;a href=&quot;https://github.com/anasnakawa/anasnakawa.com&quot;&gt;Github&lt;/a&gt;, go a head make a fork, and have it at your own site, I will be more than happy :)&lt;/p&gt;
+</content>
+		</entry>
+	
+</feed>
