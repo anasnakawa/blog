@@ -18,6 +18,6 @@
 1. Start hacking away by modifying the `src` directory
 
 
-### License
+### License (MIT)
 
 [MIT License](http://opensource.org/licenses/MIT)
